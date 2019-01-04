@@ -1,0 +1,90 @@
+version: '2.1'
+
+services:
+  web:
+    image: docksal/web:2.1-apache2.4
+    hostname: web
+    depends_on:
+      cli:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+    - default
+    - ingress
+    volumes:
+    - project_root:/var/www:ro,nocopy
+    - files:/mnt/files:ro
+    environment:
+      APACHE_DOCUMENTROOT: /var/www/${DOCROOT}
+      APACHE_FCGI_HOST_PORT: cli:9000
+    labels:
+      traefik.enable: true
+      traefik.backend: ${PROJECT_NAME}-web
+      traefik.docker.network: ingress
+      traefik.frontend.rule: Host:${VIRTUAL_HOST}
+      traefik.port: 80
+    logging:
+      driver: json-file
+      options:
+        # Limit log size
+        max-size: "200k"
+        max-file: "10"
+
+  cli:
+    image: docksal/cli:2.5-php7.1
+    hostname: cli
+    restart: unless-stopped
+    volumes:
+    - cli_home:/home/docker
+    - project_root:/var/www:rw
+    - files:/mnt/files:rw
+    environment:
+      HOSTING_ENVIRONMENT: ${PROJECT_ENVIRONMENT}
+      HOST_UID: ${HOST_UID}
+      HOST_GID: ${HOST_GID}
+      DOCROOT: ${DOCROOT}
+    logging:
+      driver: json-file
+      options:
+        # Limit log size
+        max-size: "200k"
+        max-file: "10"
+
+  db:
+    image: docksal/db:1.3-mysql-5.6
+    hostname: db
+    restart: unless-stopped
+    volumes:
+    - db_data:/var/lib/mysql:rw
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_USER: ${MYSQL_USER:-user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-user}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-default}
+    logging:
+      driver: json-file
+      options:
+        # Limit log size
+        max-size: "200k"
+        max-file: "10"
+
+volumes:
+  db_data: {}
+  cli_home: {}
+  project_root:
+    driver: local
+    driver_opts:
+      device: ${PROJECT_ROOT}
+      o: bind
+      type: none
+  files:
+    driver: local
+    driver_opts:
+      device: ${FILES_PATH}
+      o: bind
+      type: none
+
+networks:
+  default: {}
+  ingress:
+    external: true
