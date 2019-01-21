@@ -44,11 +44,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       system: true
-      # Expose Traefik dashboard at /_/portainer/ (any domain)
+      # Expose Portainer dashboard at /_/portainer/ (any domain)
       traefik.enable: true
       traefik.backend: portainer
       traefik.docker.network: ingress
-      traefik.frontend.rule: HostRegexp:{subdomain:.*};PathPrefixStrip:/_/portainer/
+      traefik.frontend.rule: PathPrefixStrip:/_/portainer/
       # Ensure this rule takes precedence over any other rule by setting a high priority number
       traefik.frontend.priority: 1000
       traefik.port: 9000
